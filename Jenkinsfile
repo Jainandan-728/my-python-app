@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Define your image name here
+        
         DOCKER_IMAGE = "my-python-app-jenkins"
     }
 
