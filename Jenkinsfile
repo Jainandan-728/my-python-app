@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // This pulls the code from your GitHub
+                
                 checkout scm
             }
         }
@@ -17,7 +17,7 @@ pipeline {
         stage('Build Image') {
             steps {
                 script {
-                    // This builds the Docker image locally on the Jenkins server
+                    
                     sh "docker build -t ${DOCKER_IMAGE}:${env.BUILD_ID} ."
                 }
             }
@@ -27,7 +27,7 @@ pipeline {
             steps {
                 script {
                     echo "Running basic smoke tests..."
-                    // Example: Check if the python file exists
+                    
                     sh "test -f app.py"
                 }
             }
