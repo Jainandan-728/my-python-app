@@ -2,57 +2,48 @@ pipeline {
     agent any
 
     environment {
-        
-        DOCKER_IMAGE = "my-python-app-jenkins"
+        DOCKER_IMAGE = "my-python-app"
+        DOCKER_TAG   = "latest"
     }
 
     stages {
-        stage('Checkout') {
+
+        stage('Build Docker Image') {
             steps {
-                
-                checkout scm
+                sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
             }
         }
 
-        stage('Build Image') {
+        stage('Login to DockerHub') {
             steps {
-                script {
-                    
-                    sh "docker build -t ${DOCKER_IMAGE}:${env.BUILD_ID} ."
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
                 }
             }
         }
 
-        stage('Test') {
+        stage('Push Image') {
             steps {
-                script {
-                    echo "Running basic smoke tests..."
-                    
-                    sh "test -f app.py"
-                }
+                sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
             }
         }
 
-        stage('Cleanup') {
+        stage('Deploy Container') {
             steps {
-                script {
-                    echo "Cleaning up old images..."
-                    // Optional: remove the image to save disk space after build
-                    sh "docker rmi ${DOCKER_IMAGE}:${env.BUILD_ID}"
-                }
-            }
-        }
-    }
+                sh """
+                docker stop myapp-container || true
+                docker rm myapp-container || true
 
-    post {
-        always {
-            echo "Build finished!"
-        }
-        success {
-            echo "Deployment Ready!"
-        }
-        failure {
-            echo "Something went wrong. Check the logs."
+                docker run -d -p 5000:5000 \
+                --name myapp-container \
+                ${DOCKER_IMAGE}:${DOCKER_TAG}
+                """
+            }
         }
     }
 }
